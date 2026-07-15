@@ -1,9 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import net.minecraftforge.gradle.userdev.tasks.RenameJarInPlace
-import java.nio.charset.StandardCharsets
-import java.nio.file.FileSystems
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -24,7 +20,6 @@ val licenseYear: String by project
 val projectName: String by project
 val doRelease: String by project
 val theForgeVersion: String by project
-val mcVersion: String by project
 val modVersion: String by project
 
 logger.error(project.gradle.gradleVersion)
@@ -34,8 +29,7 @@ base {
     archivesName.set("CubicChunks")
 }
 
-version = "${mcVersion}-${modVersion}"
-ext["mavenProjectVersion"] = version.toString()
+version = modVersion
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(8))
 
@@ -194,16 +188,8 @@ val generateMixinConfigs by tasks.registering {
 
 tasks.processResources {
     dependsOn(generateMixinConfigs)
-    doLast {
-        val mcmodInfo = file("$buildDir/resources/main/mcmod.info")
-        if (mcmodInfo.exists()) {
-            val original = mcmodInfo.readText()
-            val substituted = original.replace("%%VERSION%%", project.version.toString())
-            if (original != substituted) {
-                mcmodInfo.writeText(substituted)
-                logger.lifecycle("mcmod.info: substituted %%VERSION%% -> ${project.version}")
-            }
-        }
+    filesMatching("mcmod.info") {
+        expand("mod_version" to project.version.toString())
     }
 }
 
@@ -216,14 +202,6 @@ tasks {
         testLogging {
             showStandardStreams = true
         }
-    }
-
-    fun substituteVersion(jar: Jar) {
-        val fs = FileSystems.newFileSystem(jar.archiveFile.get().asFile.toPath(), jar.javaClass.classLoader)
-        var str = String(Files.readAllBytes(fs.getPath("mcmod.info")), StandardCharsets.UTF_8)
-        str = str.replace("%%VERSION%%", project.version.toString())
-        Files.write(fs.getPath("mcmod.info"), str.toByteArray(StandardCharsets.UTF_8), StandardOpenOption.TRUNCATE_EXISTING)
-        fs.close()
     }
 
     fun configureManifest(manifest: Manifest) {
@@ -266,9 +244,6 @@ tasks {
         exclude("LICENSE.txt", "log4j2.xml")
         configureManifest(manifest)
         archiveClassifier.set("dev")
-        doLast {
-            substituteVersion(this as Jar)
-        }
     }
 
     compileJava {
@@ -289,9 +264,6 @@ tasks {
 
     val devShadowJar by creating(ShadowJar::class) {
         configureShadowJar(this, "dev-all")
-        doLast {
-            substituteVersion(this as Jar)
-        }
     }
 
     val deobfApiJar by creating(Jar::class) {
@@ -332,9 +304,6 @@ tasks {
 
     shadowJar {
         configureShadowJar(this, "all")
-        doLast {
-            substituteVersion(this as Jar)
-        }
     }
 
     reobf {
@@ -493,14 +462,17 @@ publishing {
         }
 
         create<MavenPublication>("mod") {
-            version = project.ext["mavenProjectVersion"]!!.toString()
+            version = project.version.toString()
             artifactId = "cubicchunks"
 
             configureArtifacts(this)
             configurePom(this)
         }
 
-        //same as "mod", but using the full project version from mcGitVersion instead of mavenProjectVersion.
+        // Bit-identical to "mod" (both use project.version.toString() since the
+        // mcGitVersion-era split between mavenProjectVersion and project.version is gone);
+        // kept separate so the `onlyIf { ... }` predicate below can route it to the
+        // DaPorkchop_ Maven repository. Phase 4 will merge this with "mod".
         create<MavenPublication>("versionedMod") {
             version = project.version.toString()
             artifactId = "cubicchunks"

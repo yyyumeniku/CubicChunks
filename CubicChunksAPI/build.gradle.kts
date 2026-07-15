@@ -15,7 +15,6 @@ plugins {
 val licenseYear: String by project
 val projectName: String by project
 val doRelease: String by project
-val mcVersion: String by project
 val modVersion: String by project
 
 group = "io.github.opencubicchunks"
@@ -24,8 +23,7 @@ base {
     archivesName.set("CubicChunksAPI")
 }
 
-version = "${mcVersion}-${modVersion}"
-ext["mavenProjectVersion"] = version.toString()
+version = modVersion
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(8))
 
@@ -189,14 +187,14 @@ publishing {
         }
 
         create<MavenPublication>("mavenJava") {
-            version = project.ext["mavenProjectVersion"]!!.toString()
+            version = project.version.toString()
             artifactId = "cubicchunks-api"
 
             configureArtifacts(this)
             configurePom(this)
         }
 
-        //same as "mavenJava", but using the full project version from mcGitVersion instead of mavenProjectVersion.
+
         create<MavenPublication>("versionedMavenJava") {
             version = project.version.toString()
             artifactId = "cubicchunks-api"
