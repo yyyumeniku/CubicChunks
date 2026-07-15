@@ -1,20 +1,19 @@
 pluginManagement {
     repositories {
+        maven {
+            name = "GTNH Maven"
+            setUrl("https://nexus.gtnewhorizons.com/repository/public/")
+            mavenContent {
+                includeGroup("com.gtnewhorizons")
+                includeGroup("com.gtnewhorizons.retrofuturagradle")
+            }
+        }
         gradlePluginPortal()
-        maven {
-            name = "NeoForged"
-            setUrl("https://maven.neoforged.net/releases")
-        }
-        maven {
-            setUrl("https://repo.spongepowered.org/repository/maven-public/")
-        }
-        maven {
-            name = "Garden of Fancy"
-            setUrl("https://maven.gofancy.wtf/releases")
-        }
+        mavenCentral()
+        mavenLocal()
     }
 }
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention").version("0.5.0")
+    id("org.gradle.toolchains.foojay-resolver-convention").version("1.0.0")
 }
 rootProject.name = "CubicChunksAPI"

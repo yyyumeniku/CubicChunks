@@ -1,28 +1,34 @@
 pluginManagement {
     repositories {
-        gradlePluginPortal()
         maven {
-            name = "NeoForged"
-            setUrl("https://maven.neoforged.net/releases")
-        }
-        maven {
-            setUrl("https://repo.spongepowered.org/repository/maven-public/")
-        }
-        maven {
-            name = "Garden of Fancy"
-            setUrl("https://maven.gofancy.wtf/releases")
-        }
-    }
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.id == "org.spongepowered.mixin") {
-                useModule("org.spongepowered:mixingradle:${requested.version}")
+            name = "GTNH Maven"
+            setUrl("https://nexus.gtnewhorizons.com/repository/public/")
+            mavenContent {
+                includeGroup("com.gtnewhorizons")
+                includeGroup("com.gtnewhorizons.retrofuturagradle")
             }
         }
+        maven {
+            name = "SpongePowered"
+            setUrl("https://repo.spongepowered.org/repository/maven-public/")
+            mavenContent {
+                includeGroupByRegex("org\\.spongepowered.*")
+            }
+        }
+        maven {
+            name = "CleanroomMC"
+            setUrl("https://maven.cleanroommc.com/")
+            mavenContent {
+                includeGroup("zone.rong")
+            }
+        }
+        gradlePluginPortal()
+        mavenCentral()
+        mavenLocal()
     }
 }
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention").version("0.5.0")
+    id("org.gradle.toolchains.foojay-resolver-convention").version("1.0.0")
 }
 rootProject.name = "CubicChunks"
 includeBuild("CubicChunksAPI") {
