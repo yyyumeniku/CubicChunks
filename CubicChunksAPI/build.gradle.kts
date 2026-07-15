@@ -9,13 +9,14 @@ plugins {
     idea
     id("net.minecraftforge.gradle").version("6.0.18")
     id("wtf.gofancy.fancygradle").version("1.1.3-0")
-    id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("com.github.hierynomus.license").version("0.16.1")
 }
 
 val licenseYear: String by project
 val projectName: String by project
 val doRelease: String by project
+val mcVersion: String by project
+val modVersion: String by project
 
 group = "io.github.opencubicchunks"
 
@@ -23,10 +24,8 @@ base {
     archivesName.set("CubicChunksAPI")
 }
 
-mcGitVersion {
-    isSnapshot = true
-    setCommitVersion("tags/v0.0", "0.0")
-}
+version = "${mcVersion}-${modVersion}"
+ext["mavenProjectVersion"] = version.toString()
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(8))
 

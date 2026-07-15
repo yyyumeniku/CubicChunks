@@ -18,14 +18,14 @@ plugins {
     id("org.spongepowered.mixin").version("0.7-SNAPSHOT")
     id("com.github.johnrengelman.shadow").version("7.1.2")
     id("com.github.hierynomus.license").version("0.16.1")
-    id("io.github.opencubicchunks.gradle.mcGitVersion")
-    id("io.github.opencubicchunks.gradle.mixingen")
 }
 
 val licenseYear: String by project
 val projectName: String by project
 val doRelease: String by project
 val theForgeVersion: String by project
+val mcVersion: String by project
+val modVersion: String by project
 
 logger.error(project.gradle.gradleVersion)
 group = "io.github.opencubicchunks"
@@ -34,10 +34,8 @@ base {
     archivesName.set("CubicChunks")
 }
 
-mcGitVersion {
-    isSnapshot = true
-    setCommitVersion("tags/v0.0", "0.0")
-}
+version = "${mcVersion}-${modVersion}"
+ext["mavenProjectVersion"] = version.toString()
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(8))
 
@@ -169,39 +167,43 @@ sourceSets.main {
     ext["refMap"] = "cubicchunks.mixins.refmap.json"
 }
 
-mixinGen {
-    filePattern = "cubicchunks.mixins.%s.json"
-    defaultRefmap = "cubicchunks.mixins.refmap.json"
-    defaultPackagePrefix = "io.github.opencubicchunks.cubicchunks.core.asm.mixin"
-    defaultCompatibilityLevel = "JAVA_8"
-    defaultMinVersion = "0.7.10"
+val expectedMixins = listOf(
+    "cubicchunks.mixins.core.json",
+    "cubicchunks.mixins.core_sided.bukkit.json",
+    "cubicchunks.mixins.core_sided.vanilla.json",
+    "cubicchunks.mixins.fixes.json",
+    "cubicchunks.mixins.noncritical.json",
+    "cubicchunks.mixins.selectable.json"
+)
 
-    config("core_sided.bukkit") {
-        required = false
-        conformVisibility = true
+val generateMixinConfigs by tasks.registering {
+    group = "build"
+    description = "Verify the 6 cubicchunks.mixins.*.json files exist"
+
+    doLast {
+        val resSrcDir = File(project.projectDir, "src/main/resources")
+        expectedMixins.forEach { fileName ->
+            val f = File(resSrcDir, fileName)
+            if (!f.exists()) {
+                throw GradleException("Missing checked-in mixin config: $f. Regenerate from upstream or add manually.")
+            }
+        }
+        logger.lifecycle("generateMixinConfigs: verified ${expectedMixins.size} mixin configs present")
     }
-    config("core_sided.vanilla") {
-        required = false
-        conformVisibility = true
-    }
-    config("core") {
-        required = true
-        conformVisibility = true
-        injectorsDefaultRequire = 1
-    }
-    config("fixes") {
-        required = false
-        conformVisibility = true
-    }
-    config("noncritical") {
-        required = false
-        conformVisibility = true
-    }
-    config("selectable") {
-        required = true
-        conformVisibility = true
-        injectorsDefaultRequire = 1
-        configurationPlugin = "io.github.opencubicchunks.cubicchunks.core.asm.CubicChunksMixinConfig"
+}
+
+tasks.processResources {
+    dependsOn(generateMixinConfigs)
+    doLast {
+        val mcmodInfo = file("$buildDir/resources/main/mcmod.info")
+        if (mcmodInfo.exists()) {
+            val original = mcmodInfo.readText()
+            val substituted = original.replace("%%VERSION%%", project.version.toString())
+            if (original != substituted) {
+                mcmodInfo.writeText(substituted)
+                logger.lifecycle("mcmod.info: substituted %%VERSION%% -> ${project.version}")
+            }
+        }
     }
 }
 
